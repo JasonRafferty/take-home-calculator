@@ -26,26 +26,32 @@
       ],
       colors: ["#E3D3F0", "#AAC4FF", "#B1B2FF", "#D2DAFF", "#EEF1FF"],
     },
-    incomeTaxBands: [
-      { upTo: 12570, rate: 0 },
-      { upTo: 50270, rate: 0.2 },
-      { upTo: 125140, rate: 0.4 },
-      { upTo: Infinity, rate: 0.45 },
-    ],
-    nationalInsuranceBands: [
-      { upTo: 9880, rate: 0 },
-      { upTo: 50270, rate: 0.12 },
-      { upTo: Infinity, rate: 0.02 },
-    ],
-    studentLoanPlans: {
-      plan1: {
-        threshold: 22015,
-        rate: 0.09,
-      },
-      plan2: {
-        threshold: 27295,
-        rate: 0.09,
-      },
-    },
+  };
+
+  function toBands(bands) {
+    return bands.map((band) => ({
+      upTo: band.upTo === null ? Infinity : band.upTo,
+      rate: band.rate,
+    }));
+  }
+
+  window.TaxConfig.loadBands = function loadBands() {
+    return fetch("data/tax-bands.json")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch tax-bands.json: " + response.status);
+        }
+
+        return response.json();
+      })
+      .then((data) => {
+        window.TaxConfig.taxYear = data.taxYear;
+        window.TaxConfig.lastVerified = data.lastVerified;
+        window.TaxConfig.incomeTaxBands = toBands(data.incomeTaxBands);
+        window.TaxConfig.nationalInsuranceBands = toBands(
+          data.nationalInsuranceBands
+        );
+        window.TaxConfig.studentLoanPlans = data.studentLoanPlans;
+      });
   };
 })();

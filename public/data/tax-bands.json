@@ -1,0 +1,19 @@
+{
+  "taxYear": "2026/27",
+  "lastVerified": "2026-06-30",
+  "incomeTaxBands": [
+    { "upTo": 12570, "rate": 0 },
+    { "upTo": 50270, "rate": 0.2 },
+    { "upTo": 125140, "rate": 0.4 },
+    { "upTo": null, "rate": 0.45 }
+  ],
+  "nationalInsuranceBands": [
+    { "upTo": 12570, "rate": 0 },
+    { "upTo": 50270, "rate": 0.08 },
+    { "upTo": null, "rate": 0.02 }
+  ],
+  "studentLoanPlans": {
+    "plan1": { "threshold": 26900, "rate": 0.09 },
+    "plan2": { "threshold": 29385, "rate": 0.09 }
+  }
+}

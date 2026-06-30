@@ -40,9 +40,12 @@ globals set by earlier ones:
 
 1. `public/vendor/chart.min.js` — vendored copy of Chart.js (not from
    npm/CDN).
-2. `public/js/config.js` — `window.TaxConfig`: tax bands, NI bands, student
-   loan plan thresholds, period divisors, chart colors. **This is the only
-   source of tax data** — see "Known issues" below.
+2. `public/js/config.js` — `window.TaxConfig`: period divisors and chart
+   colors (hardcoded UI config), plus `loadBands()`, which fetches
+   `public/data/tax-bands.json` at runtime and populates the actual tax
+   data — income tax bands, NI bands, student loan plan thresholds — onto
+   `window.TaxConfig`. This is `await`ed in `app.js` before the calculator
+   becomes usable; see step 7 below.
 3. `public/js/formatters.js` — `window.Formatters`: parsing/formatting for
    currency and percentage inputs.
 4. `public/js/calculator.js` — `window.TakeHomeCalculator`: pure
@@ -56,7 +59,11 @@ globals set by earlier ones:
    toggling).
 7. `public/js/app.js` — wires everything together: holds UI state
    (`activePeriod`, `activeStudentLoanPlan`, `lastCalculation`), binds
-   event listeners, drives calculate/clear/period-switch flows.
+   event listeners, drives calculate/clear/period-switch flows. On init it
+   calls `TaxConfig.loadBands()`, disabling the Calculate button (and
+   guarding `calculate()` itself, since other inputs can trigger it too)
+   until the fetch resolves. On failure it shows an error in the footer
+   instead of calculating with missing band data.
 
 Tax calculation logic (`calculateBandDeduction` in `js/calculator.js`) walks
 banded rates (e.g. income tax bands) applying marginal rates up to each
@@ -64,18 +71,15 @@ band's `upTo` threshold — same approach for both income tax and NI.
 
 ## Known issues / tech debt
 
-- **Tax data is stale.** The UI footer says "Accurate to Nov 2023" and the
-  bands in `js/config.js` are 2023/24 figures. UK tax bands, NI rates, and
-  student loan thresholds change roughly every tax year (e.g. NI employee
-  rate, Plan 2 threshold, and a Plan 5 loan type have all changed since).
-  Anyone asked to "fix the calculation" should check current HMRC/SLC
-  figures and update `js/config.js` (and the footer text) rather than
-  assume the existing bands are still correct.
-- **`data/tax-config.json` is empty and unused.** Nothing reads it; the
-  real config lives in `js/config.js` as a JS object. Either wire it up as
-  the actual source of truth (fetch it at load time) or delete it —
-  currently it's dead weight that could mislead someone into editing the
-  wrong file.
+- **Tax band figures need refreshing annually.** They live in
+  `public/data/tax-bands.json` (fetched at runtime by `TaxConfig.loadBands()`
+  in `js/config.js`) and are currently 2026/27 figures, last verified
+  2026-06-30. UK tax bands, NI rates, and student loan thresholds change
+  every tax year (6 April) — updating them is now a data-only change to
+  that JSON file, no code edit or rebuild logic needed, but it still has
+  to be done by hand each year. Only Plan 1/2 student loan thresholds are
+  included, matching what the UI exposes (Plan 4, Plan 5, and Postgraduate
+  loans aren't supported).
 - **`vendor/chart.min.js` is hand-vendored**, not installed via a package
   manager, so there's no recorded version or way to update it except
   manually replacing the file.
@@ -109,9 +113,9 @@ Still worth adding, in priority order:
 4. **Replace vendored Chart.js with an npm dependency** — makes the
    Chart.js version explicit and updatable instead of a silently-aging
    committed file in `public/vendor/`.
-5. **A scheduled reminder/process to refresh tax bands annually** — UK tax
-   year changes every April; consider a yearly checklist or even fetching
-   bands from a config file with a "last verified" date.
+5. **A scheduled reminder/process to refresh `public/data/tax-bands.json`
+   annually** — the data now lives in one file with a `lastVerified` date,
+   but nothing prompts anyone to check it each April.
 
 Things that are likely *not* worth it for a project this size: a
 frontend framework (React/Vue) or TypeScript — the codebase is small and
@@ -129,12 +133,11 @@ the feature set grows substantially.
   `<script src="js/...">` tags will silently 404 in the production build
   (Vite only bundles `type="module"` scripts or processes `public/`
   contents; see "Architecture" above).
-- Tax band figures in `public/js/config.js` are very likely outdated by the
-  time you're reading this (frozen at 2023/24) — don't treat them as
-  correct without checking, and don't be surprised if "Accurate to Nov
-  2023" is inaccurate.
-- `data/tax-config.json` is dead/empty — don't assume it's where tax data
-  lives.
+- Tax band figures live in `public/data/tax-bands.json`, not
+  `public/js/config.js` (which only holds UI config — periods, chart
+  colors — plus the `loadBands()` fetch function). Check the `lastVerified`
+  date in that JSON before trusting the figures; they're very likely
+  outdated by the time you're reading this.
 - GitHub Pages deploy requires the repo's Pages source be set to "GitHub
   Actions" in Settings (one-time manual step, not doable from a workflow
   file) — if pushes to `main` aren't showing up live, check that first.

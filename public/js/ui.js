@@ -19,7 +19,19 @@
       accordions: document.querySelectorAll("button.accordion"),
       chartCanvas: document.getElementById("pie-chart"),
       chartWrapper: document.getElementById("pieChartFade"),
+      accurate: document.getElementById("accurateHTML"),
     };
+  }
+
+  function setLoading(elements, isLoading) {
+    elements.calculateButton.disabled = isLoading;
+    elements.calculateButton.textContent = isLoading
+      ? "Loading…"
+      : "Calculate";
+  }
+
+  function setAccurateText(elements, text) {
+    elements.accurate.textContent = text;
   }
 
   function setDefaultLabels(elements) {
@@ -95,8 +107,10 @@
     getElements,
     getPeriodFromButton,
     renderBreakdown,
+    setAccurateText,
     setActivePeriod,
     setActiveStudentLoanPlan,
     setDefaultLabels,
+    setLoading,
   };
 })();

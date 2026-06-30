@@ -34,6 +34,10 @@
   }
 
   function calculate() {
+    if (!window.TaxConfig.incomeTaxBands) {
+      return;
+    }
+
     const salary = getSalary();
 
     if (salary === null) {
@@ -151,4 +155,21 @@
 
   bindEvents();
   clearCalculator();
+  window.CalculatorUI.setLoading(elements, true);
+
+  window.TaxConfig.loadBands()
+    .then(function () {
+      window.CalculatorUI.setLoading(elements, false);
+      window.CalculatorUI.setAccurateText(
+        elements,
+        "Accurate to tax year " + window.TaxConfig.taxYear
+      );
+    })
+    .catch(function (error) {
+      console.error("Failed to load tax bands:", error);
+      window.CalculatorUI.setAccurateText(
+        elements,
+        "Couldn't load current tax data — try refreshing the page."
+      );
+    });
 })();
